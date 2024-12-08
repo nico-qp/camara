@@ -3,24 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Usar Cámara en Tiempo Real</title>
+  <title>Reconocimiento de Texto</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+  <style>
+    video, canvas { width: 100%; max-height: 300px; }
+    button { display: block; margin: 10px auto; padding: 10px 20px; }
+  </style>
 </head>
 <body>
-  <h1>Vista previa de la cámara</h1>
-  <video id="video" autoplay playsinline style="width: 100%;"></video>
+  <h1>Reconocimiento de Texto con la Cámara</h1>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <button id="capture">Capturar y Reconocer Texto</button>
+  <p id="resultado">Texto reconocido aparecerá aquí...</p>
+
   <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('capture');
+    const resultado = document.getElementById('resultado');
+
+    // Acceder a la cámara trasera
     async function iniciarCamara() {
       try {
-        // Accede a la cámara y muestra el video en el elemento <video>
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const videoElement = document.getElementById('video');
-        videoElement.srcObject = stream;
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" } // Cámara trasera
+        });
+        video.srcObject = stream;
       } catch (error) {
-        console.error('Error al acceder a la cámara: ', error);
+        console.error("Error al acceder a la cámara: ", error);
       }
     }
 
-    // Inicia la cámara al cargar la página
+    // Capturar imagen y procesar texto
+    captureBtn.addEventListener('click', () => {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Dibujar el fotograma actual del video en el canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convertir la imagen y reconocer texto
+      Tesseract.recognize(
+        canvas,      // Imagen de entrada
+        'spa',       // Idioma (español)
+        {
+          logger: m => console.log(m) // Para ver el progreso en consola
+        }
+      ).then(({ data: { text } }) => {
+        resultado.innerText = `Texto reconocido: ${text}`;
+      }).catch(err => {
+        console.error('Error en el reconocimiento: ', err);
+      });
+    });
+
+    // Iniciar la cámara al cargar
     window.onload = iniciarCamara;
   </script>
 </body>
