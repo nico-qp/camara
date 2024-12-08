@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usar Cámara en Tiempo Real</title>
+</head>
+<body>
+  <h1>Vista previa de la cámara</h1>
+  <video id="video" autoplay playsinline style="width: 100%;"></video>
+  <script>
+    async function iniciarCamara() {
+      try {
+        // Accede a la cámara y muestra el video en el elemento <video>
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const videoElement = document.getElementById('video');
+        videoElement.srcObject = stream;
+      } catch (error) {
+        console.error('Error al acceder a la cámara: ', error);
+      }
+    }
+
+    // Inicia la cámara al cargar la página
+    window.onload = iniciarCamara;
+  </script>
+</body>
+</html>
