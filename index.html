@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reconocimiento de Texto</title>
+  <title>Reconocimiento Rápido de Números</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
   <style>
     video, canvas { width: 100%; max-height: 300px; }
-    button { display: block; margin: 10px auto; padding: 10px 20px; }
+    button { margin: 10px auto; padding: 10px 20px; display: block; }
   </style>
 </head>
 <body>
-  <h1>Reconocimiento de Texto con la Cámara</h1>
+  <h1>Reconocimiento de Números</h1>
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas" style="display:none;"></canvas>
-  <button id="capture">Capturar y Reconocer Texto</button>
-  <p id="resultado">Texto reconocido aparecerá aquí...</p>
+  <button id="capture">Capturar y Reconocer Números</button>
+  <p id="resultado">Aquí aparecerán los números...</p>
 
   <script>
     const video = document.getElementById('video');
@@ -23,7 +23,7 @@
     const captureBtn = document.getElementById('capture');
     const resultado = document.getElementById('resultado');
 
-    // Acceder a la cámara trasera
+    // Iniciar cámara trasera
     async function iniciarCamara() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -35,30 +35,36 @@
       }
     }
 
-    // Capturar imagen y procesar texto
+    // Capturar y procesar imagen
     captureBtn.addEventListener('click', () => {
+      const scale = 0.5; // Reducción de resolución
       const context = canvas.getContext('2d');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth * scale;
+      canvas.height = video.videoHeight * scale;
 
-      // Dibujar el fotograma actual del video en el canvas
+      // Capturar imagen
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convertir la imagen y reconocer texto
-      Tesseract.recognize(
-        canvas,      // Imagen de entrada
-        'spa',       // Idioma (español)
-        {
-          logger: m => console.log(m) // Para ver el progreso en consola
-        }
-      ).then(({ data: { text } }) => {
-        resultado.innerText = `Texto reconocido: ${text}`;
-      }).catch(err => {
-        console.error('Error en el reconocimiento: ', err);
-      });
+
+      // Preprocesar imagen (blanco y negro)
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imageData.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const avg = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+        const binary = avg > 128 ? 255 : 0;
+        pixels[i] = pixels[i + 1] = pixels[i + 2] = binary;
+      }
+      context.putImageData(imageData, 0, 0);
+
+      // Reconocimiento de números
+      Tesseract.recognize(canvas, 'eng', {
+        tessedit_char_whitelist: '0123456789.',
+        logger: m => console.log(m)
+      }).then(({ data: { text } }) => {
+        resultado.innerText = `Números reconocidos: ${text}`;
+      }).catch(err => console.error('Error OCR:', err));
     });
 
-    // Iniciar la cámara al cargar
+    // Iniciar cámara al cargar
     window.onload = iniciarCamara;
   </script>
 </body>
